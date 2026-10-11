@@ -1,0 +1,408 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>EcoTrack - Community Waste Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f6f3;
+            color: #24332b;
+        }
+
+        header {
+            background: #176b45;
+            color: white;
+            padding: 25px 5%;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        header p {
+            margin-bottom: 0;
+        }
+
+        main {
+            width: 90%;
+            max-width: 1200px;
+            margin: 25px auto;
+        }
+
+        h2 {
+            color: #176b45;
+        }
+
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit, minmax(200px, 1fr)
+            );
+            gap: 18px;
+            margin: 20px 0;
+        }
+
+        .card, .section {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px #00000012;
+            margin-bottom: 22px;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 16px;
+        }
+
+        .card p {
+            color: #176b45;
+            font-size: 25px;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        input, select, button {
+            padding: 11px;
+            border: 1px solid #ccd5ce;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input, select {
+            flex: 1 1 180px;
+            min-width: 0;
+        }
+
+        button {
+            background: #176b45;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #105333;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #dce4de;
+            padding: 11px;
+            text-align: left;
+        }
+
+        th {
+            background: #176b45;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f5f8f5;
+        }
+
+        .chart {
+            width: 100%;
+            max-width: 900px;
+            height: auto;
+            display: block;
+            margin: 15px auto 30px;
+        }
+
+        .clear-link {
+            color: #176b45;
+            margin-left: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #66756a;
+        }
+
+        @media (max-width: 600px) {
+            main {
+                width: 94%;
+            }
+
+            header {
+                padding: 20px 3%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>EcoTrack</h1>
+    <p>Community Waste Intelligence and Resource Recovery Platform</p>
+</header>
+
+<main>
+
+    <!-- Dashboard Summary -->
+
+    <h2>Community Waste Overview</h2>
+
+    <div class="dashboard-cards">
+
+        <div class="card">
+            <h3>Total Waste Recorded</h3>
+            <p>{{ total_waste|round(2) }} kg</p>
+        </div>
+
+        <div class="card">
+            <h3>Records Logged</h3>
+            <p>{{ total_records }}</p>
+        </div>
+
+        <div class="card">
+            <h3>Collection Locations</h3>
+            <p>{{ total_locations }}</p>
+        </div>
+
+    </div>
+
+    <!-- Add Waste Record -->
+
+    <div class="section">
+
+        <h2>Log Community Waste</h2>
+
+        <form action="/add" method="POST">
+
+            <input type="date"
+                   name="record_date"
+                   required>
+
+            <input type="text"
+                   name="location"
+                   placeholder="Location"
+                   required>
+
+            <select name="category" required>
+                <option value="">Select Category</option>
+                <option value="Organic">Organic</option>
+                <option value="Recyclable">Recyclable</option>
+                <option value="Non-Recyclable">Non-Recyclable</option>
+                <option value="Hazardous">Hazardous</option>
+                <option value="E-Waste">E-Waste</option>
+            </select>
+
+            <input type="text"
+                   name="waste_type"
+                   placeholder="Waste Type (e.g. Paper)"
+                   required>
+
+            <input type="number"
+                   name="quantity"
+                   step="0.01"
+                   min="0.01"
+                   placeholder="Waste Quantity (kg)"
+                   required>
+
+            <input type="text"
+                   name="notes"
+                   placeholder="Notes (optional)">
+
+            <button type="submit">Add Waste Record</button>
+
+        </form>
+
+    </div>
+
+    <!-- Filter Waste Records -->
+
+    <div class="section">
+
+        <h2>Filter Waste Records</h2>
+
+        <form action="/" method="GET">
+
+            <select name="category">
+                <option value="">All Categories</option>
+
+                {% for item in [
+                    'Organic',
+                    'Recyclable',
+                    'Non-Recyclable',
+                    'Hazardous',
+                    'E-Waste'
+                ] %}
+
+                <option value="{{ item }}"
+                    {% if category == item %}selected{% endif %}>
+                    {{ item }}
+                </option>
+
+                {% endfor %}
+            </select>
+
+            <input type="text"
+                   name="location"
+                   placeholder="Search location"
+                   value="{{ location }}">
+
+            <input type="text"
+                   name="waste_type"
+                   placeholder="Search waste type"
+                   value="{{ waste_type }}">
+
+            <select name="period">
+
+                <option value="">All Time</option>
+
+                <option value="10days"
+                    {% if period == '10days' %}selected{% endif %}>
+                    Last 10 Days
+                </option>
+
+                <option value="1month"
+                    {% if period == '1month' %}selected{% endif %}>
+                    Last Month
+                </option>
+
+                <option value="6months"
+                    {% if period == '6months' %}selected{% endif %}>
+                    Last 6 Months
+                </option>
+
+                <option value="1year"
+                    {% if period == '1year' %}selected{% endif %}>
+                    Last Year
+                </option>
+
+            </select>
+
+            <button type="submit">Apply Filters</button>
+
+            <a class="clear-link" href="/">Clear Filters</a>
+
+        </form>
+
+    </div>
+
+    <!-- Latest Waste Records -->
+
+    <div class="section">
+
+        <h2>Latest Waste Records</h2>
+
+        <p>Showing up to 5 records matching your filters.</p>
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>S.No.</th>
+                        <th>Date</th>
+                        <th>Location</th>
+                        <th>Category</th>
+                        <th>Waste Type</th>
+                        <th>Quantity (kg)</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for record in records %}
+
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ record[1] }}</td>
+                        <td>{{ record[2] }}</td>
+                        <td>{{ record[3] }}</td>
+                        <td>{{ record[4] }}</td>
+                        <td>{{ record[5] }}</td>
+                        <td>{{ record[7] or '-' }}</td>
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+                        <td colspan="7">No waste records found.</td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <!-- Waste Data Analysis -->
+
+    <div class="section">
+
+        <h2>Waste Data Analysis</h2>
+
+        <div class="dashboard-cards">
+
+            <div class="card">
+                <h3>Average Waste per Record</h3>
+                <p>{{ analysis.average_waste }} kg</p>
+            </div>
+
+        </div>
+
+        <h3>Waste Generated by Category</h3>
+
+        <img
+            class="chart"
+            src="{{ url_for('static', filename=analysis.category_chart) }}"
+            alt="Bar chart of waste categories"
+        >
+
+        <h3>Monthly Waste Comparison by Type</h3>
+
+        <img
+            class="chart"
+            src="{{ url_for('static', filename=analysis.monthly_chart) }}"
+            alt="Line chart comparing waste types by month"
+        >
+
+    </div>
+
+</main>
+
+<footer>
+    EcoTrack | Community Waste Intelligence and Resource Recovery
+</footer>
+
+</body>
+</html>
